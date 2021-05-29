@@ -1,6 +1,7 @@
 import scipy.io as scio
 import os
 import numpy as np
+import torch
 
 class ParentDataset:
     def __init__(self, data_features_dir):
@@ -79,6 +80,7 @@ class ParentDataset:
         """
         attribute_dict = scio.loadmat(os.path.join(data_features_dir, 'att_splits.mat'))
 
+        self._attribute_dict = attribute_dict
         self.attributes = attribute_dict['att'].T
 
         self.class_name_to_idx = {}
@@ -88,11 +90,25 @@ class ParentDataset:
             self.class_name_to_idx[class_name] = i
             self.class_idx_to_name.append(class_name)
 
+        self.class_num = len(self.class_name_to_idx)
+
         assert self.attributes.shape[0] == len(self.class_name_to_idx)
 
-    #def get_dataset(self, type):
-
-
+    def get_dataset(self, type):
+        """
+        :param type: name of the data set to get: 'train', 'val', 'trainval', 'test_seen', 'test_unseen'.
+        :returns: (features, labels, mask) tuple, where:
+            * features - input features matrix of shape (N, D)
+            * labels - labels of shape (N,), where each element is a number from 0 to C-1.
+            * mask - mask vector with 1 where legal classes of this dataset are, of shape (C,)
+        """
+        features = torch.FloatTensor(self.features[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1, :])
+        labels = torch.LongTensor(self.labels[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1])
+        mask = torch.zeros((self.class_num,), dtype=torch.bool)
+        for label in torch.unique(labels):
+            mask[label.item()] = 1
+        return features, labels, mask
+    
 
 """
 class CustomImageDataset(Dataset):

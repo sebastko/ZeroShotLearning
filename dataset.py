@@ -94,7 +94,7 @@ class ParentDataset:
 
         assert self.attributes.shape[0] == len(self.class_name_to_idx)
 
-    def get_dataset(self, type):
+    def get_dataset(self, type, device):
         """
         :param type: name of the data set to get: 'train', 'val', 'trainval', 'test_seen', 'test_unseen'.
         :returns: (features, labels, mask) tuple, where:
@@ -102,12 +102,12 @@ class ParentDataset:
             * labels - labels of shape (N,), where each element is a number from 0 to C-1.
             * mask - mask vector with 1 where legal classes of this dataset are, of shape (C,)
         """
-        features = torch.FloatTensor(self.features[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1, :])
-        labels = torch.LongTensor(self.labels[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1])
+        features = torch.FloatTensor(self.features[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1, :]).to(device)
+        labels = torch.LongTensor(self.labels[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1]).to(device)
         classes = torch.unique(labels)
-        mask = torch.zeros((self.class_num,), dtype=torch.bool)
+        mask = torch.zeros((self.class_num,), dtype=torch.bool).to(device)
         for label in classes:
-            mask[label.item()] = 1
+            mask[label.item()] = True
         return features, labels, classes, mask
     
 

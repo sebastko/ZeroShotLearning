@@ -10,8 +10,8 @@ from gan import GanTrainer
 from classifier import MaskedClassifier, train_cls
 
 
-def get_dataset_and_print(data, type):
-    X, y, classes, mask = data.get_dataset(type)
+def get_dataset_and_print(data, type, device):
+    X, y, classes, mask = data.get_dataset(type, device)
     print('---------------')
     print(f'Data set {type}:')
     print(f'  N:          {X.shape[0]}')
@@ -21,14 +21,14 @@ def get_dataset_and_print(data, type):
     return X, y, classes, mask
 
 def cli():
-    device = torch.device('cpu') #torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     print(f'Device: {device}')
 
     data_features_dir = '/mnt/c/datasets/xlsa17/data/AWA2'
     data = dataset.ParentDataset(data_features_dir)
 
     total_N, _ = data.features.shape
-    train_all_X, train_all_y, train_all_classes, train_all_mask = get_dataset_and_print(data, 'train')
+    train_all_X, train_all_y, train_all_classes, train_all_mask = get_dataset_and_print(data, 'train', device)
     train_all_N, fea_dim = train_all_X.shape
 
     # TODO: make gin configurable?
@@ -38,9 +38,9 @@ def cli():
     train_X, train_y, train_mask = train_all_X[:train_N, :], train_all_y[:train_N], train_all_mask
     val_seen_X, val_seen_y, val_seen_mask = train_all_X[train_N:, :], train_all_y[train_N:], train_all_mask
 
-    val_unseen_X, val_unseen_y, val_unseen_classes, val_unseen_mask = get_dataset_and_print(data, 'val')
-    test_seen_X, test_seen_y, test_seen_classes, test_seen_mask = get_dataset_and_print(data, 'test_seen')
-    test_unseen_X, test_unseen_y, test_unseen_classes, test_unseen_mask = get_dataset_and_print(data, 'test_unseen')
+    val_unseen_X, val_unseen_y, val_unseen_classes, val_unseen_mask = get_dataset_and_print(data, 'val', device)
+    test_seen_X, test_seen_y, test_seen_classes, test_seen_mask = get_dataset_and_print(data, 'test_seen', device)
+    test_unseen_X, test_unseen_y, test_unseen_classes, test_unseen_mask = get_dataset_and_print(data, 'test_unseen', device)
 
     assert total_N == train_all_X.shape[0] + val_unseen_X.shape[0] + test_seen_X.shape[0] + test_unseen_X.shape[0]
 
@@ -52,11 +52,11 @@ def cli():
     print('2. Train  the  conditional f-CLSWGAN generator, conditioned on class attributes a_y')
 
     attr_dim = data.attributes.shape[-1]
-    train_attr = torch.FloatTensor(data.attributes[train_y.detach().numpy()])
+    train_attr = torch.FloatTensor(data.attributes[train_y.cpu().detach().numpy()])
     assert train_attr.shape == (train_X.shape[0], attr_dim)
     gan_trainer = GanTrainer(device, fea_dim, attr_dim, attr_dim, classifier=best_linear_cls)
 
-    n_epochs = 5
+    n_epochs = 10
     for ep in trange(1, n_epochs + 1):
         loss_dis, loss_gen = gan_trainer.fit_GAN(train_X, train_attr, train_y)
         print("Loss for epoch: %3d - D: %.4f | G: %.4f"\

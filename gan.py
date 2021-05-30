@@ -132,7 +132,7 @@ class GanTrainer:
 
         if use_cls_loss:
             self.classifier.eval()
-            Y_pred = F.softmax(self.classifier(X_gen), dim=0)
+            Y_pred = F.softmax(self.classifier(X_gen), dim=-1)
             log_prob = torch.log(torch.gather(Y_pred, 1, label_idx.unsqueeze(1)))
             L_cls = -1 * torch.mean(log_prob)
             L_gen += self.beta * L_cls
@@ -164,15 +164,15 @@ class GanTrainer:
         '''
         self.net_G.eval()
 
-        y = np.tile(classes, n_examples)
-        attr = torch.FloatTensor(attributes[y], device=self.device)
-        z = self.Z_dist.sample(torch.Size((len(classes) * n_examples, self.z_dim)))
+        y = torch.tile(classes, (n_examples,)).to(self.device)
+        attr = torch.index_select(torch.FloatTensor(attributes).to(self.device), 0, y)
+        z = self.Z_dist.sample(torch.Size((len(classes) * n_examples, self.z_dim))).to(self.device)
         z_inp = self.get_conditional_input(z, attr)
         X_gen = self.net_G(z_inp).detach()
 
         assert X_gen.shape[0] == len(classes) * n_examples
 
-        return X_gen, torch.LongTensor(y, device=self.device)
+        return X_gen, y
 
     def save_model(self):
         g_ckpt_path = os.path.join(self.model_save_dir, "netG.pth")

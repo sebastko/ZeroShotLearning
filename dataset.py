@@ -104,10 +104,11 @@ class ParentDataset:
         """
         features = torch.FloatTensor(self.features[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1, :])
         labels = torch.LongTensor(self.labels[self._attribute_dict[f'{type}_loc'].reshape(-1) - 1])
+        classes = torch.unique(labels)
         mask = torch.zeros((self.class_num,), dtype=torch.bool)
-        for label in torch.unique(labels):
+        for label in classes:
             mask[label.item()] = 1
-        return features, labels, mask
+        return features, labels, classes, mask
     
 
 """

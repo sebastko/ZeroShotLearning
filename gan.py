@@ -106,8 +106,10 @@ class GanTrainer:
             X_gen = self.net_G(Z)
             X_gen = self.get_conditional_input(X_gen, label_attr)
 
+            d_fakes = self.net_D(X_gen)
+            d_real = self.net_D(X_real)
             # calculate normal GAN loss
-            L_disc = (self.net_D(X_gen) - self.net_D(X_real)).mean()
+            L_disc = (d_fakes - d_real).mean()
 
             # calculate gradient penalty
             grad_penalty = self.get_gradient_penalty(X_real, X_gen)
@@ -141,7 +143,11 @@ class GanTrainer:
         L_gen.backward()
         self.optim_G.step()
 
-        return total_L_disc, L_gen.item()
+        with torch.no_grad():
+            d_x = torch.sum(d_real > 0.5).item() / d_real.shape[0]
+            d_g_z = torch.sum(d_fakes < 0.5).item() / d_fakes.shape[0]
+
+        return total_L_disc, L_gen.item(), d_x, d_g_z
     
     """
     def generate_data(self, labels, attributes, num_examples):

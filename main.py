@@ -58,9 +58,9 @@ def cli():
 
     n_epochs = 10
     for ep in trange(1, n_epochs + 1):
-        loss_dis, loss_gen = gan_trainer.fit_GAN(train_X, train_attr, train_y)
-        print("Loss for epoch: %3d - D: %.4f | G: %.4f"\
-                %(ep, loss_dis, loss_gen))
+        loss_dis, loss_gen, d_x, d_g_z = gan_trainer.fit_GAN(train_X, train_attr, train_y)
+        print("Loss for epoch: %3d - D: %.4f | G: %.4f | D(x) acc: %.4f | D(G(z)) acc: %.4f"\
+                %(ep, loss_dis, loss_gen, d_x, d_g_z))
 
     print('Done!')
 

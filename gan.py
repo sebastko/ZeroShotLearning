@@ -85,7 +85,7 @@ class GanTrainer:
         grad_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
         return grad_penalty
 
-    def fit_GAN(self, img_features, label_attr, label_idx, use_cls_loss=True):
+    def train(self, img_features, label_attr, label_idx, use_cls_loss=True):
         L_gen = 0
         L_disc = 0
         total_L_disc = 0

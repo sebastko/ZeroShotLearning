@@ -19,7 +19,7 @@ class MaskedClassifier(nn.Module):
         return masked_pred
 
 
-def train_cls(cls_mask, train_X, train_y, val_X, val_y, device):
+def train_cls(cls_mask, train_X, train_y, val_X, val_y, device, verbose=True):
     _, fea_dim = train_X.shape
     linear_cls = MaskedClassifier(fea_dim, cls_mask.to(device), device)
     optimizer = torch.optim.Adam(linear_cls.parameters())
@@ -30,7 +30,7 @@ def train_cls(cls_mask, train_X, train_y, val_X, val_y, device):
 
     best_val_acc = 0.0
     best_linear_cls = None
-    for i in range(10): # 100
+    for i in range(20): # 100
         optimizer.zero_grad()
         train_pred = linear_cls(train_X.to(device))
         loss = criterion(train_pred, train_y)
@@ -40,10 +40,12 @@ def train_cls(cls_mask, train_X, train_y, val_X, val_y, device):
         val_seen_pred = linear_cls(val_X.to(device))
         train_acc = accuracy(train_pred, train_y)
         val_acc = accuracy(val_seen_pred, val_y)
-        print(f'Loss: {loss}, train acc: {train_acc}, val acc: {val_acc}')
+        if verbose:
+            print(f'Loss: {loss}, train acc: {train_acc}, val acc: {val_acc}')
         if val_acc > best_val_acc:
-            print('Best!')
+            if verbose:
+                print('Best!')
             best_val_acc = val_acc
             best_linear_cls = copy.deepcopy(linear_cls).to(device)
 
-    return best_linear_cls
+    return best_linear_cls, best_val_acc
